@@ -13,11 +13,11 @@ cur_dir=$(pwd)
 # ============================================================
 
 # 你的 GitHub 仓库
-GITHUB_REPO="chiyamahisayoshi/X-backup"
+GITHUB_REPO="XrayR-project/XrayR"
 
 # 固定 XrayR 版本
 # 如果以后使用其他版本，只修改这里即可
-XRAYR_VERSION="v0.9.0"
+XRAYR_VERSION="v0.9.4"
 
 # GitHub Release 下载地址
 RELEASE_URL="https://github.com/${GITHUB_REPO}/releases/download/${XRAYR_VERSION}"
