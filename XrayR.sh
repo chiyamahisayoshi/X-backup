@@ -36,6 +36,23 @@ q. 退出
 EOF
 }
 
+show_service_summary() {
+    local service_state="未运行"
+    local boot_state="未设置"
+    if command -v systemctl >/dev/null 2>&1; then
+        if systemctl is-active --quiet "$SERVICE"; then
+            service_state="运行中"
+        fi
+        if systemctl is-enabled --quiet "$SERVICE" 2>/dev/null; then
+            boot_state="已启用"
+        fi
+    fi
+    echo
+    echo "当前状态：${service_state}"
+    echo "开机自启：${boot_state}"
+    echo
+}
+
 download_file() {
     local url="$1" output="$2"
     if command -v curl >/dev/null 2>&1; then
@@ -142,7 +159,9 @@ run_command() {
         systemctl status "$SERVICE" --no-pager -l
         ;;
     log)
-        require_systemd; echo "XrayR 最近日志："; journalctl -u "$SERVICE" --no-pager -e
+        require_systemd
+        echo "XrayR 日志跟踪中，按 Ctrl+C 停止跟踪并退出..."
+        journalctl -u XrayR.service -e --no-pager -f
         ;;
     version)
         [[ -x "$BINARY" ]] || { echo "错误：XrayR 尚未安装。" >&2; exit 1; }
@@ -174,6 +193,7 @@ run_command() {
 
 if [[ $# -eq 0 ]]; then
     show_menu
+    show_service_summary
     read -r -p "请选择操作 [0-13/q]： " choice
     case "$choice" in
         0) run_command config ;;
