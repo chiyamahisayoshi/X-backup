@@ -62,6 +62,29 @@ sudo XrayR status
 
 ### 4. 日常管理
 
+直接运行 `XrayR` 会显示完整管理菜单：
+
+```text
+0 修改配置
+1 安装 XrayR
+2 更新 XrayR
+3 卸载 XrayR
+4 启动 XrayR
+5 停止 XrayR
+6 重启 XrayR
+7 状态
+8 日志
+9 开机自启
+10 取消自启
+11 BBR（仅查看状态，不自动修改）
+12 版本
+13 升级维护脚本
+```
+
+菜单中的更新和维护脚本升级只从本仓库 `master` 获取，不使用第三方地址。
+
+也可以直接使用命令：
+
 ```text
 sudo XrayR start
 sudo XrayR stop
