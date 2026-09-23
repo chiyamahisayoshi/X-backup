@@ -7,7 +7,6 @@ readonly RAW_BASE="https://raw.githubusercontent.com/${REPOSITORY}/master"
 readonly INSTALL_DIR="/usr/local/XrayR"
 readonly CONFIG_DIR="/etc/XrayR"
 readonly SERVICE_FILE="/etc/systemd/system/XrayR.service"
-readonly SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 readonly CONFIG_FILES=(
     config.yml
     custom_inbound.json
@@ -17,6 +16,11 @@ readonly CONFIG_FILES=(
     dns.json
     route.json
     rulelist
+)
+readonly SUPPORT_FILES=(
+    install.sh
+    XrayR.sh
+    XrayR.service
 )
 
 version="${1:-$DEFAULT_VERSION}"
@@ -101,6 +105,26 @@ for config_file in "${CONFIG_FILES[@]}"; do
         exit 1
     }
 done
+support_source="${tmp_dir}/support"
+mkdir -p "$support_source"
+for support_file in "${SUPPORT_FILES[@]}"; do
+    destination="${support_source}/${support_file}"
+    echo "下载安装文件 ${support_file}..."
+    if ! download "${RAW_BASE}/${support_file}" "$destination"; then
+        echo "错误：公开仓库缺少 ${support_file}，安装已停止。" >&2
+        exit 1
+    fi
+    [[ -s "$destination" ]] || {
+        echo "错误：公开仓库中的 ${support_file} 为空，安装已停止。" >&2
+        exit 1
+    }
+done
+grep -q '^#!/usr/bin/env bash$' "${support_source}/install.sh" ||
+    { echo "错误：下载的 install.sh 校验失败，安装已停止。" >&2; exit 1; }
+grep -q '^#!/usr/bin/env bash$' "${support_source}/XrayR.sh" ||
+    { echo "错误：下载的 XrayR.sh 校验失败，安装已停止。" >&2; exit 1; }
+grep -q '^\[Unit\]$' "${support_source}/XrayR.service" ||
+    { echo "错误：下载的 XrayR.service 校验失败，安装已停止。" >&2; exit 1; }
 
 archive="${tmp_dir}/XrayR-linux-${asset_arch}.zip"
 url="https://github.com/${REPOSITORY}/releases/download/v${version}/XrayR-linux-${asset_arch}.zip"
@@ -120,8 +144,8 @@ chmod 0755 "$binary"
 staged_install="${tmp_dir}/XrayR"
 mkdir -p "$staged_install"
 cp -f "$binary" "$staged_install/XrayR"
-cp -f "${SCRIPT_DIR}/XrayR.sh" "${staged_install}/XrayR.sh"
-cp -f "${SCRIPT_DIR}/install.sh" "${staged_install}/install.sh"
+cp -f "${support_source}/XrayR.sh" "${staged_install}/XrayR.sh"
+cp -f "${support_source}/install.sh" "${staged_install}/install.sh"
 mkdir -p "${staged_install}/config"
 cp -a "${config_source}/." "${staged_install}/config/"
 chmod 0755 "${staged_install}/XrayR.sh" "${staged_install}/install.sh"
@@ -134,8 +158,8 @@ mv -- "$staged_install" "$INSTALL_DIR"
 
 install -d -m 0755 "$CONFIG_DIR"
 cp -a "${config_source}/." "$CONFIG_DIR/"
-install -m 0644 "${SCRIPT_DIR}/XrayR.service" "$SERVICE_FILE"
-install -m 0755 "${SCRIPT_DIR}/XrayR.sh" /usr/local/bin/XrayR
+install -m 0644 "${support_source}/XrayR.service" "$SERVICE_FILE"
+install -m 0755 "${support_source}/XrayR.sh" /usr/local/bin/XrayR
 ln -sfn /usr/local/bin/XrayR /usr/bin/XrayR
 
 systemctl daemon-reload
