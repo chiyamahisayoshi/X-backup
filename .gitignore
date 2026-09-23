@@ -1,5 +1,4 @@
 # Local deployment configuration and secrets.
-config/config.yml
 config/*.key
 config/*.pem
 config/*.crt
