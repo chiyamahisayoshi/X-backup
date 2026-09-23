@@ -1,5 +1,0 @@
-# Copy this file to config.yml and fill in your own values.
-# Do not commit credentials, tokens, private keys, or certificates.
-Log:
-  Level: warning
-Nodes: []

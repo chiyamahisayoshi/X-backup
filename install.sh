@@ -3,10 +3,21 @@ set -Eeuo pipefail
 
 readonly DEFAULT_VERSION="0.9.6"
 readonly REPOSITORY="chiyamahisayoshi/X-backup"
+readonly RAW_BASE="https://raw.githubusercontent.com/${REPOSITORY}/master"
 readonly INSTALL_DIR="/usr/local/XrayR"
 readonly CONFIG_DIR="/etc/XrayR"
 readonly SERVICE_FILE="/etc/systemd/system/XrayR.service"
 readonly SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+readonly CONFIG_FILES=(
+    config.yml
+    custom_inbound.json
+    custom_outbound.json
+    geoip.dat
+    geosite.dat
+    dns.json
+    route.json
+    rulelist
+)
 
 version="${1:-$DEFAULT_VERSION}"
 version="${version#v}"
@@ -17,13 +28,6 @@ fi
 
 if [[ "${EUID}" -ne 0 ]]; then
     echo "错误：请使用 root 运行此脚本。" >&2
-    exit 1
-fi
-
-config_source="${SCRIPT_DIR}/config"
-if [[ ! -f "${config_source}/config.yml" ]]; then
-    echo "错误：缺少 ${config_source}/config.yml。" >&2
-    echo "请先上传或填写自己的配置；密钥不得提交到 Git。" >&2
     exit 1
 fi
 
@@ -83,6 +87,21 @@ cleanup() {
 trap cleanup EXIT
 
 install_packages
+config_source="${tmp_dir}/config"
+mkdir -p "$config_source"
+for config_file in "${CONFIG_FILES[@]}"; do
+    destination="${config_source}/${config_file}"
+    echo "下载配置 ${config_file}..."
+    if ! download "${RAW_BASE}/config/${config_file}" "$destination"; then
+        echo "错误：公开仓库缺少 config/${config_file}，安装已停止。" >&2
+        exit 1
+    fi
+    [[ -s "$destination" ]] || {
+        echo "错误：公开仓库中的 config/${config_file} 为空，安装已停止。" >&2
+        exit 1
+    }
+done
+
 archive="${tmp_dir}/XrayR-linux-${asset_arch}.zip"
 url="https://github.com/${REPOSITORY}/releases/download/v${version}/XrayR-linux-${asset_arch}.zip"
 echo "下载 XrayR ${version} (${asset_arch})..."
