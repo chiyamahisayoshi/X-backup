@@ -160,10 +160,28 @@ install -d -m 0755 "$CONFIG_DIR"
 cp -a "${config_source}/." "$CONFIG_DIR/"
 install -m 0644 "${support_source}/XrayR.service" "$SERVICE_FILE"
 install -m 0755 "${support_source}/XrayR.sh" /usr/local/bin/XrayR
-ln -sfn /usr/local/bin/XrayR /usr/bin/XrayR
+for command_link in /usr/bin/XrayR /usr/bin/xrayr; do
+    if [[ -L "$command_link" ]]; then
+        rm -f "$command_link"
+    elif [[ -e "$command_link" ]]; then
+        echo "警告：${command_link} 已存在且不是软链接，保留原文件。" >&2
+        continue
+    fi
+    ln -s /usr/local/bin/XrayR "$command_link"
+done
 
 systemctl daemon-reload
 systemctl enable XrayR
+echo "正在启动 XrayR..."
+systemctl start XrayR
+if systemctl is-active --quiet XrayR; then
+    echo "XrayR ${version} 启动成功。"
+    echo "查看状态：sudo XrayR status"
+else
+    echo "错误：XrayR 启动失败。" >&2
+    echo "请查看日志：sudo XrayR log" >&2
+    exit 1
+fi
 if [[ -e "$backup_dir" ]]; then
     rm -rf -- "$backup_dir"
 fi
