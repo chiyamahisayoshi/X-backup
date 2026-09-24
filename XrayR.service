@@ -1,0 +1,17 @@
+[Unit]
+Description=XrayR service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/usr/local/XrayR
+ExecStart=/usr/local/XrayR/XrayR --config /etc/XrayR/config.yml
+Restart=on-failure
+RestartSec=5
+LimitNOFILE=999999
+
+[Install]
+WantedBy=multi-user.target
